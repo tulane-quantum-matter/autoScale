@@ -598,8 +598,6 @@ class myFunc(myRawData, myScaleAssumption):
                 # get smallest larger value
                 if sVal.x > sPiv.x and (maxVal == None or sVal.x <= maxVal.x):
                     maxVal = sVal
-                # elif sVal.x>sPiv.x and sVal.x<=maxVal:
-                #   maxVal=sVal
                 del sVal
             # add min/max pair to current set if both 'exist'
             if minVal != None and maxVal != None:
