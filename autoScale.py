@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 ## \file   autoScale.py
 #  \brief  a prograom for automatic finite size scaling analyses
 #
@@ -330,6 +331,10 @@ class myRawData:
 
     Uses:
     class myValue                -- used in method fetchData()
+    
+    Instance Variables:
+    dataSet                      -- dictionary of data sets at each system size
+    nSets                        -- Length of data sets
     """
 
     def __init__(self):
@@ -407,9 +412,9 @@ class myScaleAssumption:
         """set value of specified scaling parameter
 
         Input:
-        scaleParName                -- 'name' of scaling parameter
+        scaleParName               -- 'name' of scaling parameter
         scaleParVal                -- new value for scaling parameter
-        optFlag                        -- tells if scaling parameter will
+        optFlag                    -- tells if scaling parameter will
                                    be optimized
 
         Returns: nothing
