@@ -661,7 +661,7 @@ def errorAnalysis(f):
     f                -- data structure containing raw data and scaling assumption
 
     Returns: (parErr)
-    parErr                -- errors for scaling parameters
+    parErr           -- errors for scaling parameters
     """
     # get list of scaling parameters and corresponding optimization flags
     scalePar, optFlag = f.scaleParList()
