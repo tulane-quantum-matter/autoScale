@@ -28,6 +28,7 @@ import sys, os, math
 
 pow = math.pow
 sqrt = math.sqrt
+log = math.log
 
 
 def div(a, b):
@@ -279,12 +280,12 @@ def iniSimplex(myFunc, trialPoint, delta, optFlag):
     """Construct initial simplex
 
     Input:
-    myFunc                -- function that implements scaling assumption
-    trialPoint        -- initial guess as trial point for simplex
-                       construction
-    delta                -- scaling parameter for simplex points
-    optFlag                -- indicates if a scaling parameter will be
-                       optimized
+    myFunc           -- function that implements scaling assumption
+    trialPoint       -- initial guess as trial point for simplex
+                        construction
+    delta            -- scaling parameter for simplex points
+    optFlag          -- indicates if a scaling parameter will be
+                        optimized
 
     Returns: (p,y)
     p                -- initial simplex
@@ -331,7 +332,7 @@ class myRawData:
 
     Uses:
     class myValue                -- used in method fetchData()
-    
+
     Instance Variables:
     dataSet                      -- dictionary of data sets at each system size
     nSets                        -- Length of data sets
@@ -404,6 +405,9 @@ class myScaleAssumption:
         self.ao = 1
         self.b = 0.0
         self.bo = 1
+        self.xi = 1
+        self.xio = 0
+        self.xlog = 0
         # intervall on rescaled x-axes
         self.scaledXMin = -99999.0
         self.scaledXMax = +99999.0
@@ -428,21 +432,26 @@ class myScaleAssumption:
         elif scaleParName == "b":
             self.b = scaleParVal
             self.bo = optFlag
+        elif scaleParName == "xi":
+            self.xi = scaleParVal
+            self.xio = optFlag
         else:
             print("scale parameter %s does not exist" % (scaleParName))
 
-    def updateByHand(self, xc, a, b):
+    def updateByHand(self, xc, a, b, xi):
         """update scaling parameters
 
         Input:
         xc                -- critical point
-        a,b                -- crit exponents
+        a,b               -- crit exponents
+        xi                -- correlation length
 
         Returns: nothing
         """
         self.xc = xc
         self.a = a
         self.b = b
+        self.xi = xi
 
     def updateFromList(self, par):
         """update scaling parameters from supplied
@@ -454,9 +463,15 @@ class myScaleAssumption:
 
         Returns: nothing
         """
-        self.xc = par[0]
-        self.a = par[1]
-        self.b = par[2]
+        if self.xlog:  # marginal scaling in x
+            self.xc = par[0]
+            self.a = par[1]
+            self.b = par[2]
+            self.xi = par[3]
+        else:
+            self.xc = par[0]
+            self.a = par[1]
+            self.b = par[2]
 
     def scaleParNames(self):
         """return list of scaling parameter Names
@@ -466,7 +481,10 @@ class myScaleAssumption:
         Returns: (nameList)
         nameList        -- list of scaling parameters
         """
-        return ["xc", "a", "b"]
+        if self.xlog:
+            return ["xc", "a", "b", "xi"]
+        else:
+            return ["xc", "a", "b"]
 
     def scaleParList(self):
         """return list of scaling parameters and optimization flags
@@ -477,7 +495,15 @@ class myScaleAssumption:
         parList                -- list of scaling parameters
         optFlag                -- corresponding optimization flag
         """
-        return [self.xc, self.a, self.b], [self.xco, self.ao, self.bo]
+        if self.xlog:
+            return [self.xc, self.a, self.b, self.xi], [
+                self.xco,
+                self.ao,
+                self.bo,
+                self.xio,
+            ]
+        else:
+            return [self.xc, self.a, self.b], [self.xco, self.ao, self.bo]
 
     def scale(self, val):
         """apply scaling assumption
@@ -494,12 +520,20 @@ class myScaleAssumption:
         Returns: (scaledVal)
         scaledVal        -- input value after scaling assumption was applied
         """
-        return myValue(
-            val.L,
-            (val.x - self.xc) * pow(val.L, self.a),
-            val.y * pow(val.L, self.b),
-            val.dy * pow(val.L, self.b),
-        )
+        if self.xlog:
+            return myValue(
+                val.L,
+                (val.x - self.xc) * pow(log(div(val.L, self.xi)), self.a),
+                val.y * pow(val.L, self.b),
+                val.dy * pow(val.L, self.b),
+            )
+        else:
+            return myValue(
+                val.L,
+                (val.x - self.xc) * pow(val.L, self.a),
+                val.y * pow(val.L, self.b),
+                val.dy * pow(val.L, self.b),
+            )
 
     def listScalePar(self, fileStream=sys.stdout):
         """list scaling parameters
@@ -510,7 +544,12 @@ class myScaleAssumption:
         Returns: nothing, but writes scaling parameters to
                 specified file out stream
         """
-        fileStream.write("xc=%f a=%f b=%f\n" % (self.xc, self.a, self.b))
+        if self.xlog:
+            fileStream.write(
+                "xc=%f a=%f b=%f xi=%f\n" % (self.xc, self.a, self.b, self.xi)
+            )
+        else:
+            fileStream.write("xc=%f a=%f b=%f\n" % (self.xc, self.a, self.b))
 
 
 class myFunc(myRawData, myScaleAssumption):
@@ -648,10 +687,24 @@ class myFunc(myRawData, myScaleAssumption):
                 specified file out stream
         """
         quality = self.scaleData(scalePar)
-        fileStream.write(
-            "dx = [%lf:%lf]  xc = %f  a = %f  b = %f  S = %f\n"
-            % (self.scaledXMin, self.scaledXMax, self.xc, self.a, self.b, quality)
-        )
+        if self.xlog:
+            fileStream.write(
+                "dx = [%lf:%lf]  xc = %f  a = %f  b = %f  xi = %f  S = %f\n"
+                % (
+                    self.scaledXMin,
+                    self.scaledXMax,
+                    self.xc,
+                    self.a,
+                    self.b,
+                    self.xi,
+                    quality,
+                )
+            )
+        else:
+            fileStream.write(
+                "dx = [%lf:%lf]  xc = %f  a = %f  b = %f  S = %f\n"
+                % (self.scaledXMin, self.scaledXMax, self.xc, self.a, self.b, quality)
+            )
 
 
 def errorAnalysis(f):
@@ -730,8 +783,11 @@ def usage(progName):
         \n\t                            if called as '-a!', <float> is fixed during parameter optimization\
         \n\t-b   <float>             -- estimate of exponent b (default: 0.0)\
         \n\t                            if called as '-b!', <float> is fixed during parameter optimization\
+        \n\t-xi  <float>             -- estimate of correlation length xi (default: 1.0)\
+        \n\t                            if called as '-xi!', <float> is fixed during parameter optimization\
         \n\t-xr <float> <float>      -- lower/upper boundary of interval on rescaled x-axis\
         \n\t                            for which scaling analysis should be performed\
+        \n\t-xlog                    -- set x scaling to marginal, (x-xc)[ln(L/xi)]^a\
         \n\t-showS                   -- report quality 'S' during minimization procedure\
         \n\t-getError                -- compute errors for scaling parameters using S+1 analysis\
         \n\nEXAMPLE\
@@ -809,7 +865,7 @@ def main():
                 sys.exit(1)
 
         # check if following argument specifies scaling parameter
-        elif sys.argv[arg] in ["-xc", "-a", "-b"]:
+        elif sys.argv[arg] in ["-xc", "-a", "-b", "-xi"]:
             # name that identifies scaling parameter
             scaleParName = sys.argv[arg].split("-")[-1]
             # new value of the scaling parameter
@@ -824,7 +880,7 @@ def main():
 
         # check if following argument specifies scaling parameter
         # that shall be set but not optimized
-        elif sys.argv[arg] in ["-xc!", "-a!", "-b!"]:
+        elif sys.argv[arg] in ["-xc!", "-a!", "-b!", "-xi!"]:
             # name that identifies scaling parameter
             scaleParName = sys.argv[arg].split("-")[-1].split("!")[0]
             # new value of the scaling parameter
@@ -856,6 +912,10 @@ def main():
 
         elif sys.argv[arg] == "-getError":
             getError = 1
+            arg += 1
+
+        elif sys.argv[arg] == "-xlog":
+            f.xlog = 1
             arg += 1
 
         else:
