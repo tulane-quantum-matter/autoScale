@@ -29,6 +29,7 @@ import sys, os, math
 pow = math.pow
 sqrt = math.sqrt
 log = math.log
+fsum = math.fsum
 
 
 def div(a, b):
@@ -655,21 +656,19 @@ class myFunc(myRawData, myScaleAssumption):
 
         Input:
         pivX                        -- x value for which Y,dY will be computed
-        subSet                        -- list of data points (x,y,dy)
+        subSet                      -- list of data points (x,y,dy)
 
         Return: (Y,dY2)
-        Y,dY2                        -- estimate of master function with error
+        Y,dY2                       -- estimate of master function with error
         """
-        K = Kx = Ky = Kxx = Kxy = 0.0
-        for val in subSet:
-            x, y, dy = val.x, val.y, val.dy
-            wgt = div(1.0, dy * dy)
-            K += wgt
-            Kx += x * wgt
-            Ky += y * wgt
-            Kxx += x * x * wgt
-            Kxy += x * y * wgt
-
+        wgts = [div(1.0, val.dy * val.dy) for val in subSet]
+        # fsum for high precision
+        K = fsum(wgts)
+        Kx = fsum([val.x * wgt for val, wgt in zip(subSet, wgts)])
+        Ky = fsum([val.y * wgt for val, wgt in zip(subSet, wgts)])
+        Kxx = fsum([val.x * val.x * wgt for val, wgt in zip(subSet, wgts)])
+        Kxy = fsum([val.x * val.y * wgt for val, wgt in zip(subSet, wgts)])
+        
         fac = K * Kxx - Kx * Kx
         A = div(Ky * Kxx - Kx * Kxy, fac)
         B = div(K * Kxy - Kx * Ky, fac)
