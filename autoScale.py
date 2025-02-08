@@ -35,6 +35,19 @@ fsum = math.fsum
 def div(a, b):
     return float(a) / float(b)
 
+def solve2x2(a11, a12, a21, a22, y1, y2):
+    """Solves x in A x = y for 2x2 matrix A
+    """
+    # Partial pivoting (swap rows if |a11| < |a21|)
+    if abs(a11) < abs(a21):
+        a11, a12, a21, a22 = a21, a22, a11, a12
+        y1, y2 = y2, y1
+    # Compute elimination multiplier and solve directly
+    m = a21 / a11
+    x2 = (y2 - m * y1) / (a22 - m * a12)
+    x1 = (y1 - a12 * x2) / a11
+    return (x1, x2)
+
 
 def rootBisection(myFunc, xMin, xMax, epsilon):
     """shrink interval that contains root of function, method
@@ -650,19 +663,6 @@ class myFunc(myRawData, myScaleAssumption):
         del sPiv
         return subSet
 
-    def solve2x2(a11, a12, a21, a22, y1, y2):
-        """Solves x in A x = y for 2x2 matrix A
-        """
-        # Partial pivoting (swap rows if |a11| < |a21|)
-        if abs(a11) < abs(a21):
-            a11, a12, a21, a22 = a21, a22, a11, a12
-            y1, y2 = y2, y1
-        # Compute elimination multiplier and solve directly
-        m = a21 / a11
-        x2 = (y2 - m * y1) / (a22 - m * a12)
-        x1 = (y1 - a12 * x2) / a11
-        return (x1, x2)
-
     def llsFit(self, pivX, subSet):
         """perform linear least squares fit of the data points
         in subSet to a straight line to result in estimate Y=A+B*x
@@ -682,7 +682,7 @@ class myFunc(myRawData, myScaleAssumption):
         Kxx = fsum([val.x * val.x * wgt for val, wgt in zip(subSet, wgts)])
         Kxy = fsum([val.x * val.y * wgt for val, wgt in zip(subSet, wgts)])
         
-        A, B = self.solve2x2(K, Kx, Kx, Kxx, Ky, Kxy)
+        A, B = solve2x2(K, Kx, Kx, Kxx, Ky, Kxy)
         Y = A + B * pivX
         fac = K * Kxx - Kx * Kx
         dY2 = div(Kxx - 2.0 * pivX * Kx + pivX * pivX * K, fac)
