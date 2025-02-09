@@ -160,7 +160,7 @@ def amoeba(my_func, p, y, opt_flag, ftol, report_fitness):
     """
     # set parameters
     TINY = 1.0e-10  # simply a small number
-    ITMAX = 500  # maximum allowed iterations
+    ITMAX = 2500  # maximum allowed iterations
     NMAX = 20  # maximum allowed dimensions
 
     ndim = len(y) - 1  # number of scaling parameters
@@ -966,6 +966,8 @@ def main():
 
     else:
         f.listState(pBest, outFile)
+        
+    sys.stderr.write("Optimization took %d iterations\n" % nIter)
 
 
 main()
