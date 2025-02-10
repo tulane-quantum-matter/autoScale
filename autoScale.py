@@ -819,7 +819,7 @@ def main():
     # than this, minimization routine has 'converged'
     getError = 0  # 1: perform error analysis, 0: no error analysis
     version = "1.0"  # current verion of the program
-    
+
     itmax = 5000
 
     # initialize instance of myFunc that carries raw data
