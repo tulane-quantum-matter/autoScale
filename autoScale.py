@@ -140,7 +140,7 @@ def getBrackets(dumFunc, midVal):
     return lBrack, rBrack
 
 
-def amoeba(my_func, p, y, opt_flag, ftol, report_fitness):
+def amoeba(my_func, p, y, opt_flag, ftol, report_fitness, ITMAX):
     """Simplex algorithm of Nelder & Mead, adopted from Numerical recipes in C.
 
     NOTE: multidimensional minimization of function my_func(q), where q
@@ -160,7 +160,6 @@ def amoeba(my_func, p, y, opt_flag, ftol, report_fitness):
     """
     # set parameters
     TINY = 1.0e-10  # simply a small number
-    ITMAX = 2500  # maximum allowed iterations
     NMAX = 20  # maximum allowed dimensions
 
     ndim = len(y) - 1  # number of scaling parameters
@@ -786,19 +785,20 @@ def usage(progName):
         \n\nOPTIONS\
         \n\t-help                    -- write usage and exit program\
         \n\t-version                 -- write version number and exit\
-        \n\t-f   <inFile>            -- file that contains list of paths to data files\
-        \n\t-o   <outFile>           -- path to output file (default: stdout)\
-        \n\t-xc  <float>             -- estimate for critical point (default: 0.0)\
+        \n\t-f  <inFile>             -- file that contains list of paths to data files\
+        \n\t-o  <outFile>            -- path to output file (default: stdout)\
+        \n\t-xc <float>              -- estimate for critical point (default: 0.0)\
         \n\t                            if called as '-xc!', <float> is fixed during parameter optimization\
-        \n\t-a   <float>             -- estimate of exponent a (default: 0.0)\
+        \n\t-a  <float>              -- estimate of exponent a (default: 0.0)\
         \n\t                            if called as '-a!', <float> is fixed during parameter optimization\
-        \n\t-b   <float>             -- estimate of exponent b (default: 0.0)\
+        \n\t-b  <float>              -- estimate of exponent b (default: 0.0)\
         \n\t                            if called as '-b!', <float> is fixed during parameter optimization\
-        \n\t-xi  <float>             -- estimate of correlation length xi (default: 1.0)\
+        \n\t-xi <float>              -- estimate of correlation length xi (default: 1.0)\
         \n\t                            if called as '-xi!', <float> is fixed during parameter optimization\
         \n\t-xr <float> <float>      -- lower/upper boundary of interval on rescaled x-axis\
         \n\t                            for which scaling analysis should be performed\
         \n\t-xlog                    -- set x scaling to marginal, (x-xc)[ln(L/xi)]^a\
+        \n\t-itmax <int>             -- maximum number of iterations for minimization routine\
         \n\t-showS                   -- report quality 'S' during minimization procedure\
         \n\t-getError                -- compute errors for scaling parameters using S+1 analysis\
         \n\nEXAMPLE\
@@ -819,6 +819,8 @@ def main():
     # than this, minimization routine has 'converged'
     getError = 0  # 1: perform error analysis, 0: no error analysis
     version = "1.0"  # current verion of the program
+    
+    itmax = 5000
 
     # initialize instance of myFunc that carries raw data
     # and scaling assumption, must be initialized before
@@ -904,6 +906,11 @@ def main():
                 break
             continue
 
+        elif sys.argv[arg] == "-itmax":
+            arg += 1
+            itmax = int(sys.argv[arg])
+            arg += 1
+
         elif sys.argv[arg] == "-showS":
             # report fitness during minimizatin procedure
             # (default in repFit=0)
@@ -945,7 +952,7 @@ def main():
     # initialize simplex
     p, y = iniSimplex(S, scalePar, delta, optFlag)
     # minimize quality function S by adjusting scaling parameters
-    pBest, yBest, nIter = amoeba(S, p, y, optFlag, simpTol, repFit)
+    pBest, yBest, nIter = amoeba(S, p, y, optFlag, simpTol, repFit, ITMAX=itmax)
     ########## END: SCALING PARAMETER OPTIMIZATION #####################
 
     if getError:
