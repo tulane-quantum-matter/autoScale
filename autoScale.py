@@ -782,6 +782,7 @@ def usage(progName):
         \n\tThe program implements the scaling assumption\
         \n\n\tx -> (x-xc)L^a\
         \n\ty -> yL^b\
+        \n\tIn -xlog mode: x -> (x-xc) ln(L/xi)^a\
         \n\nOPTIONS\
         \n\t-help                    -- write usage and exit program\
         \n\t-version                 -- write version number and exit\
